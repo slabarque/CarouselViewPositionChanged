@@ -1,23 +1,83 @@
-﻿namespace CarouselViewPositionChanged;
+﻿using Microsoft.Extensions.Logging;
+using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
+using System.Windows.Input;
+
+namespace CarouselViewPositionChanged;
+
+public class MyModel
+{
+    public DateOnly Date { get; set; }
+    public int DayOfYear { get; set; }
+}
 
 public partial class MainPage : ContentPage
 {
-	int count = 0;
+    private static int INDICATOR_ITEM_WIDTH = 60;
 
-	public MainPage()
-	{
-		InitializeComponent();
-	}
+    private MyModel selectedDate;
+    private readonly ILogger<MainPage> _logger;
 
-	private void OnCounterClicked(object? sender, EventArgs e)
-	{
-		count++;
+    public MainPage(ILogger<MainPage> logger)
+    {
+        _logger = logger;
+        InitializeComponent();
+        Init = new Command(() =>
+        {
+            // In my real app, this command loads data asynchronously from a database
+            _logger.LogDebug("Initializing");
+            SelectedDate = null;
+            Dates.Clear();
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var result = Enumerable.Range(-30, 60).Select(i => today.AddDays(i)).ToArray();
+            MyModel? selected = null;
+            foreach (var date in result)
+            {
+                Dates.Add(new MyModel { Date = date, DayOfYear = date.DayOfYear });
+                if (date == today)
+                {
+                    selected = Dates.Last();
+                }
+            }
+            SelectedDate = selected!;
+        });
+        BindingContext = this;
+    }
 
-		if (count == 1)
-			CounterBtn.Text = $"Clicked {count} time";
-		else
-			CounterBtn.Text = $"Clicked {count} times";
+    public MyModel SelectedDate
+    {
+        set { SetProperty(ref selectedDate, value); }
+        get { return selectedDate; }
+    }
 
-		SemanticScreenReader.Announce(CounterBtn.Text);
-	}
+    public ObservableCollection<MyModel> Dates { get; } = new();
+
+    public ICommand Init { get; private set; }
+
+    bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = null)
+    {
+        if (Object.Equals(storage, value))
+            return false;
+
+        storage = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
+
+    private async void CarouselView_PositionChanged(object sender, PositionChangedEventArgs e)
+    {
+        try
+        {
+            // Center the active indicator in the indicatorScrollView
+            var xStart = indicatorScrollView.ContentSize.Width / INDICATOR_ITEM_WIDTH * e.CurrentPosition;
+            var x = xStart < Window.Width / 2 ? 0 : xStart - Window.Width / 2 + INDICATOR_ITEM_WIDTH / 2;
+            _logger.LogDebug("Scrolling to ({x},{y}) => {CurrentPosition}", x, indicatorScrollView.ScrollY, e.CurrentPosition);
+            await indicatorScrollView.ScrollToAsync(x, indicatorScrollView.ScrollY, true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while scrolling the indicatorScrollView to match the CarouselView position");
+        }
+    }
 }
+
