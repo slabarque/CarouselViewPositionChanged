@@ -13,7 +13,7 @@ public class MyModel
 
 public partial class MainPage : ContentPage
 {
-    private static int DAYS_TO_SHOW = 60;
+    private static int DAYS_TO_SHOW = 61;
 
     private MyModel selectedDate;
     private readonly ILogger<MainPage> _logger;
@@ -29,7 +29,7 @@ public partial class MainPage : ContentPage
             SelectedDate = null;
             Dates.Clear();
             var today = DateOnly.FromDateTime(DateTime.Today);
-            var result = Enumerable.Range(-30, DAYS_TO_SHOW).Select(i => today.AddDays(i)).ToArray();
+            var result = Enumerable.Range(-DAYS_TO_SHOW/2, DAYS_TO_SHOW).Select(i => today.AddDays(i)).ToArray();
             MyModel? selected = null;
             foreach (var date in result)
             {
@@ -70,14 +70,8 @@ public partial class MainPage : ContentPage
         {
             // Center the active indicator in the indicatorScrollView
             var indicatorWidth = indicatorScrollView.ContentSize.Width / DAYS_TO_SHOW;
-            _logger.LogTrace("{indicatorWidth} = {ContentSizeWidth} / {DaysToShow}",
-                indicatorWidth, indicatorScrollView.ContentSize.Width, DAYS_TO_SHOW);
             var xStart = indicatorWidth * e.CurrentPosition;
-            _logger.LogTrace("xStart:{xStart}={indicatorWidth} * {CurrentPosition}",
-                xStart, indicatorWidth, e.CurrentPosition);
-            var x = xStart < Window.Width / 2 ? 0 : xStart - Window.Width / 2 + indicatorWidth / 2;
-            _logger.LogTrace("x:{x}={xStart} < {WindowWidth}/2 ? 0 : {xStart} - {WindowWidth}/2 + {indicatorWidth}/2",
-                x, xStart, Window.Width, xStart, Window.Width, indicatorWidth);
+            var x = Math.Max(0, xStart - Window.Width / 2 + indicatorWidth / 2);
             await indicatorScrollView.ScrollToAsync(x, indicatorScrollView.ScrollY, true);
         }
         catch (Exception ex)
