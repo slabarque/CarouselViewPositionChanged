@@ -32,7 +32,7 @@
                       ItemsSource="{Binding Dates}" 
                       IndicatorView="{x:Reference indicatorView}"
                       Loop="False"
-                      IsScrollAnimated="True"
+                      IsScrollAnimated="False"
                       HorizontalScrollBarVisibility="Never"
                       CurrentItem="{Binding SelectedDate}"
                       PositionChanged="CarouselView_PositionChanged">
